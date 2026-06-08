@@ -98,6 +98,11 @@ export default function Home() {
   // 检查用户是否有管理权限
   const canManage = user && profile && ['admin', 'editor'].includes(profile.role);
   const canDelete = user && profile && profile.role === 'admin';
+  
+  // 未登录只显示3个网站
+  const GUEST_LIMIT = 3;
+  const displayedSites = user ? sites : sites.slice(0, GUEST_LIMIT);
+  const hasMoreSites = !user && sites.length > GUEST_LIMIT;
 
   if (isLoading) {
     return (
@@ -277,7 +282,7 @@ export default function Home() {
 
           {/* 网站网格 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sites.map((site, index) => (
+            {displayedSites.map((site, index) => (
               <div 
                 key={site.id}
                 className="animate-fade-in-up"
@@ -290,6 +295,23 @@ export default function Home() {
                 />
               </div>
             ))}
+            
+            {/* 未登录时显示登录提示卡片 */}
+            {hasMoreSites && (
+              <div className="animate-fade-in-up" style={{ animationDelay: `${displayedSites.length * 100}ms` }}>
+                <Link href="/auth/login">
+                  <div className="h-full min-h-[200px] rounded-xl border-2 border-dashed border-white/20 bg-white/5 backdrop-blur-sm flex flex-col items-center justify-center gap-4 hover:border-white/40 hover:bg-white/10 transition-all duration-300 cursor-pointer group">
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                      <LogIn className="h-6 w-6 text-white/60 group-hover:text-white transition-colors" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-white/60 font-medium mb-1">登录查看更多</p>
+                      <p className="text-white/40 text-sm">还有 {sites.length - GUEST_LIMIT} 个网站</p>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* 空状态 */}
