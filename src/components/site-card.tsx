@@ -90,10 +90,6 @@ export function SiteCard({ site, onDelete, onEdit }: SiteCardProps) {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 bg-black/50 backdrop-blur-sm text-white/60 hover:text-white hover:bg-white/20 border border-white/10"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

@@ -178,9 +178,13 @@ export function SiteDialogTrigger({
 
   return (
     <>
-      <span onClick={handleClick} style={{ display: 'contents' }}>
+      <div 
+        onClick={handleClick} 
+        className="relative z-20"
+        style={{ display: 'contents' }}
+      >
         {children}
-      </span>
+      </div>
       <SiteDialog
         mode={mode}
         site={site}
