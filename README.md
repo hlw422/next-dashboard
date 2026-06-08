@@ -10,7 +10,9 @@
 - 📱 **响应式布局** - 适配各种屏幕尺寸
 - 🚀 **高性能** - Next.js 16 + Turbopack 构建
 - 💾 **数据持久化** - Supabase PostgreSQL 数据库
-- 🔒 **安全可靠** - 环境变量管理敏感配置
+- 🔒 **用户认证** - Supabase Auth 支持邮箱密码 + 第三方登录
+- 👥 **角色系统** - 管理员、编辑者、查看者三级权限
+- 🛡️ **API 保护** - 所有写操作需要认证
 
 ## 🛠️ 技术栈
 
@@ -19,6 +21,7 @@
 | **前端框架** | Next.js 16.2.7 (Turbopack) |
 | **UI 组件** | shadcn/ui + Tailwind CSS |
 | **数据库** | Supabase (PostgreSQL) |
+| **认证服务** | Supabase Auth |
 | **图标库** | Lucide React |
 | **字体** | Inter + JetBrains Mono |
 | **包管理器** | pnpm |
@@ -29,18 +32,38 @@
 react-dashboard/
 ├── src/
 │   ├── app/
+│   │   ├── admin/              # 管理员页面
 │   │   ├── api/sites/          # API 路由 (CRUD)
+│   │   ├── auth/               # 认证页面
+│   │   │   ├── login/          # 登录页面
+│   │   │   ├── signup/         # 注册页面
+│   │   │   ├── reset-password/ # 密码重置
+│   │   │   └── callback/       # OAuth 回调
 │   │   ├── globals.css         # 全局样式 (Awwwards 风格)
 │   │   ├── layout.tsx          # 根布局
 │   │   └── page.tsx            # 主页面
 │   ├── components/
+│   │   ├── auth/               # 认证组件
+│   │   │   ├── AuthGuard.tsx   # 权限守卫
+│   │   │   ├── AuthModal.tsx   # 登录弹窗
+│   │   │   └── UserMenu.tsx    # 用户菜单
 │   │   ├── site-card.tsx       # 网站卡片组件
 │   │   ├── site-dialog.tsx     # 添加/编辑对话框
 │   │   └── ui/                 # shadcn/ui 组件
+│   ├── contexts/
+│   │   └── AuthContext.tsx      # 认证上下文
 │   ├── data/
 │   │   └── sites.ts            # 数据操作函数
-│   └── lib/
-│       └── supabase.ts         # Supabase 客户端配置
+│   ├── lib/
+│   │   ├── supabase/           # Supabase 客户端
+│   │   │   ├── server.ts       # 服务端客户端
+│   │   │   ├── client.ts       # 浏览器端客户端
+│   │   │   └── middleware.ts   # 中间件辅助
+│   │   ├── permissions.ts      # 权限检查工具
+│   │   └── supabase.ts         # 兼容性导出
+│   ├── types/
+│   │   └── auth.ts             # 认证类型定义
+│   └── middleware.ts           # Next.js 中间件
 ├── public/                     # 静态资源
 ├── .env.local                  # 环境变量 (不提交到 Git)
 ├── .gitignore                  # Git 忽略规则
@@ -74,7 +97,7 @@ pnpm install
 
 1. 访问 [Supabase 控制台](https://app.supabase.com) 创建项目
 2. 在 SQL Editor 中执行 `supabase-schema.sql` 创建数据表
-3. 获取项目 URL 和 Anon Key
+3. 获取项目 URL、Anon Key 和 Service Role Key
 
 ### 4. 设置环境变量
 
@@ -83,9 +106,19 @@ pnpm install
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-### 5. 启动开发服务器
+### 5. 配置第三方登录（可选）
+
+在 Supabase 控制台中配置 OAuth 提供商：
+
+1. 进入 **Authentication** -> **Providers**
+2. 启用 GitHub 和/或 Google
+3. 配置 OAuth 应用的 Client ID 和 Client Secret
+4. 设置回调 URL：`https://your-domain.com/auth/callback`
+
+### 6. 启动开发服务器
 
 ```bash
 pnpm dev
@@ -104,7 +137,7 @@ pnpm lint     # 运行 ESLint 检查
 
 ## 🗄️ 数据库结构
 
-`sites` 表包含以下字段：
+### sites 表
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -115,6 +148,46 @@ pnpm lint     # 运行 ESLint 检查
 | `icon` | VARCHAR(50) | 网站图标 (Emoji) |
 | `created_at` | TIMESTAMP | 创建时间 |
 | `updated_at` | TIMESTAMP | 更新时间 |
+
+### user_profiles 表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | UUID | 主键，关联 auth.users |
+| `email` | TEXT | 用户邮箱 |
+| `role` | ENUM | 用户角色 (admin/editor/viewer) |
+| `display_name` | TEXT | 显示名称 |
+| `avatar_url` | TEXT | 头像 URL |
+| `created_at` | TIMESTAMP | 创建时间 |
+| `updated_at` | TIMESTAMP | 更新时间 |
+
+## 🔐 认证系统
+
+### 认证方式
+
+- **邮箱密码** - 传统注册登录
+- **GitHub OAuth** - 第三方登录
+- **Google OAuth** - 第三方登录
+
+### 角色权限
+
+| 操作 | admin | editor | viewer |
+|------|-------|--------|--------|
+| 浏览网站 | ✅ | ✅ | ✅ |
+| 添加网站 | ✅ | ✅ | ❌ |
+| 编辑网站 | ✅ | ✅ | ❌ |
+| 删除网站 | ✅ | ❌ | ❌ |
+| 管理用户 | ✅ | ❌ | ❌ |
+
+### 页面路由
+
+| 路径 | 说明 | 访问权限 |
+|------|------|----------|
+| `/` | 主页面 | 所有人 |
+| `/auth/login` | 登录页面 | 未登录 |
+| `/auth/signup` | 注册页面 | 未登录 |
+| `/auth/reset-password` | 密码重置 | 未登录 |
+| `/admin` | 管理后台 | 管理员 |
 
 ## 🎨 设计特点
 
@@ -147,13 +220,13 @@ const handleMouseMove = (e: React.MouseEvent) => {
 
 ## 🔧 API 端点
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| `GET` | `/api/sites` | 获取所有网站 |
-| `POST` | `/api/sites` | 创建新网站 |
-| `GET` | `/api/sites/[id]` | 获取单个网站 |
-| `PUT` | `/api/sites/[id]` | 更新网站 |
-| `DELETE` | `/api/sites/[id]` | 删除网站 |
+| 方法 | 路径 | 说明 | 认证要求 |
+|------|------|------|----------|
+| `GET` | `/api/sites` | 获取所有网站 | 无 |
+| `POST` | `/api/sites` | 创建新网站 | 需要认证 |
+| `GET` | `/api/sites/[id]` | 获取单个网站 | 无 |
+| `PUT` | `/api/sites/[id]` | 更新网站 | 需要认证 |
+| `DELETE` | `/api/sites/[id]` | 删除网站 | 需要认证 |
 
 ## 📦 部署
 
@@ -161,7 +234,10 @@ const handleMouseMove = (e: React.MouseEvent) => {
 
 1. Fork 本仓库
 2. 在 Vercel 中导入项目
-3. 配置环境变量
+3. 配置环境变量：
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
 4. 部署
 
 ### Docker 部署
@@ -181,7 +257,9 @@ CMD ["npm", "start"]
 
 - `.env.local` 文件已被 `.gitignore` 排除，不会提交到 Git
 - Supabase Anon Key 是公开密钥，仅用于客户端访问
-- 敏感操作需要配置 Row Level Security (RLS)
+- Service Role Key 仅在服务端使用，不会暴露给浏览器
+- 所有写操作 API 都需要认证
+- 使用 Row Level Security (RLS) 保护数据
 
 ## 🤝 贡献
 

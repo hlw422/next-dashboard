@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, SITES_TABLE, SiteInfo } from '@/lib/supabase'
+import { createServerClient } from '@/lib/supabase/server'
+import { SITES_TABLE } from '@/lib/supabase'
 
 // GET - 获取所有网站
 export async function GET() {
   try {
+    const supabase = await createServerClient()
     const { data, error } = await supabase
       .from(SITES_TABLE)
       .select('*')
@@ -26,6 +28,7 @@ export async function GET() {
 // POST - 创建新网站
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createServerClient()
     const body = await request.json()
     const { name, url, description, icon } = body
 

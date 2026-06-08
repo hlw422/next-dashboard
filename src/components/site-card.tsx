@@ -77,55 +77,57 @@ export function SiteCard({ site, onDelete, onEdit }: SiteCardProps) {
         </Card>
       </a>
       
-      {/* 操作按钮 */}
-      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-        {onEdit && (
-          <SiteDialogTrigger
-            mode="edit"
-            site={site}
-            onSave={onEdit}
-          >
+      {/* 操作按钮（仅在有权限时显示） */}
+      {(onEdit || onDelete) && (
+        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+          {onEdit && (
+            <SiteDialogTrigger
+              mode="edit"
+              site={site}
+              onSave={onEdit}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 bg-black/50 backdrop-blur-sm text-white/60 hover:text-white hover:bg-white/20 border border-white/10"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  <path d="m15 5 4 4" />
+                </svg>
+              </Button>
+            </SiteDialogTrigger>
+          )}
+          {onDelete && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 bg-black/50 backdrop-blur-sm text-white/60 hover:text-white hover:bg-white/20 border border-white/10"
+              className="h-8 w-8 bg-black/50 backdrop-blur-sm text-white/60 hover:text-red-400 hover:bg-red-500/20 border border-white/10"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                onDelete(site.id);
               }}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                <path d="m15 5 4 4" />
-              </svg>
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
-          </SiteDialogTrigger>
-        )}
-        {onDelete && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 bg-black/50 backdrop-blur-sm text-white/60 hover:text-red-400 hover:bg-red-500/20 border border-white/10"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onDelete(site.id);
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

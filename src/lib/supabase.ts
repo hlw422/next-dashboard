@@ -1,9 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
+// Supabase 客户端配置
+// 保留此文件以保持向后兼容性
+// 新代码请使用 @/lib/supabase/server 或 @/lib/supabase/client
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export { createServerClient } from './supabase/server'
+export { createBrowserClient } from './supabase/client'
 
 // 网站信息类型定义
 export interface SiteInfo {
@@ -18,3 +18,4 @@ export interface SiteInfo {
 
 // 数据库表名
 export const SITES_TABLE = 'sites'
+export const USER_PROFILES_TABLE = 'user_profiles'

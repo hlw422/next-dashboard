@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, SITES_TABLE } from '@/lib/supabase'
+import { createServerClient } from '@/lib/supabase/server'
+import { SITES_TABLE } from '@/lib/supabase'
 
 // GET - 获取单个网站
 export async function GET(
@@ -7,6 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const supabase = await createServerClient()
     const { id } = await params
     const { data, error } = await supabase
       .from(SITES_TABLE)
@@ -41,6 +43,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const supabase = await createServerClient()
     const { id } = await params
     const body = await request.json()
     const { name, url, description, icon } = body
@@ -99,6 +102,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const supabase = await createServerClient()
     const { id } = await params
     const { error } = await supabase
       .from(SITES_TABLE)

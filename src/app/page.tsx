@@ -5,7 +5,10 @@ import { SiteCard } from "@/components/site-card";
 import { SiteDialogTrigger } from "@/components/site-dialog";
 import { Button } from "@/components/ui/button";
 import { SiteInfo, fetchSites, createSite, updateSite, deleteSite } from "@/data/sites";
-import { Plus, Loader2, GitBranch, ExternalLink } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserMenu } from "@/components/auth/UserMenu";
+import { Plus, Loader2, GitBranch, ExternalLink, LogIn } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
   const [sites, setSites] = useState<SiteInfo[]>([]);
@@ -13,6 +16,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
+  const { user, profile } = useAuth();
 
   // 鼠标跟踪效果
   useEffect(() => {
@@ -91,6 +95,10 @@ export default function Home() {
     }
   };
 
+  // 检查用户是否有管理权限
+  const canManage = user && profile && ['admin', 'editor'].includes(profile.role);
+  const canDelete = user && profile && profile.role === 'admin';
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden">
@@ -127,10 +135,26 @@ export default function Home() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" />
       </div>
 
+      {/* 导航栏 */}
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">W</span>
+            </div>
+            <span className="text-white/80 font-mono text-sm font-semibold">WEBSITE PORTAL</span>
+          </Link>
+
+          {/* 用户菜单 */}
+          <UserMenu />
+        </div>
+      </nav>
+
       {/* Hero 区域 */}
       <div 
         ref={heroRef}
-        className="relative min-h-screen flex items-center justify-center px-4"
+        className="relative min-h-screen flex items-center justify-center px-4 pt-16"
       >
         {/* 鼠标跟随光效 */}
         <div
@@ -185,15 +209,27 @@ export default function Home() {
 
           {/* 操作按钮 */}
           <div className="flex justify-center gap-4">
-            <SiteDialogTrigger mode="add" onSave={handleAddSite}>
-              <Button 
-                variant="outline" 
-                className="gap-2 px-8 py-6 text-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-300 group"
-              >
-                <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-30" />
-                添加网站
-              </Button>
-            </SiteDialogTrigger>
+            {canManage ? (
+              <SiteDialogTrigger mode="add" onSave={handleAddSite}>
+                <Button 
+                  variant="outline" 
+                  className="gap-2 px-8 py-6 text-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-300 group"
+                >
+                  <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-30" />
+                  添加网站
+                </Button>
+              </SiteDialogTrigger>
+            ) : (
+              <Link href="/auth/login">
+                <Button 
+                  variant="outline" 
+                  className="gap-2 px-8 py-6 text-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-300 group"
+                >
+                  <LogIn className="h-5 w-5" />
+                  登录以管理
+                </Button>
+              </Link>
+            )}
             
             <Button 
               variant="ghost" 
@@ -249,8 +285,8 @@ export default function Home() {
               >
                 <SiteCard
                   site={site}
-                  onDelete={handleDeleteSite}
-                  onEdit={handleEditSite}
+                  onDelete={canDelete ? handleDeleteSite : undefined}
+                  onEdit={canManage ? handleEditSite : undefined}
                 />
               </div>
             ))}
@@ -263,7 +299,9 @@ export default function Home() {
                 <Plus className="h-12 w-12 text-white/20" />
               </div>
               <h3 className="text-xl text-white/60 mb-2">暂无网站</h3>
-              <p className="text-white/40 mb-6">点击上方按钮添加您的第一个网站</p>
+              <p className="text-white/40 mb-6">
+                {canManage ? '点击上方按钮添加您的第一个网站' : '登录后即可添加网站'}
+              </p>
             </div>
           )}
         </div>
