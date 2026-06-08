@@ -1,65 +1,121 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import { Header } from "@/components/header";
+import { SiteCard } from "@/components/site-card";
+import { SiteDialogTrigger } from "@/components/site-dialog";
+import { Button } from "@/components/ui/button";
+import { SiteInfo, fetchSites, createSite, updateSite, deleteSite } from "@/data/sites";
+import { Plus, Loader2 } from "lucide-react";
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+  const [sites, setSites] = useState<SiteInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 从 API 加载数据
+  useEffect(() => {
+    loadSites();
+  }, []);
+
+  const loadSites = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await fetchSites();
+      setSites(data);
+    } catch (err) {
+      console.error("Failed to load sites:", err);
+      setError("加载网站列表失败，请检查数据库连接");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddSite = async (newSite: SiteInfo) => {
+    try {
+      const created = await createSite({
+        name: newSite.name,
+        url: newSite.url,
+        description: newSite.description,
+        icon: newSite.icon,
+      });
+      setSites(prev => [created, ...prev]);
+    } catch (err) {
+      console.error("Failed to create site:", err);
+      setError("添加网站失败，请重试");
+    }
+  };
+
+  const handleEditSite = async (updatedSite: SiteInfo) => {
+    try {
+      const updated = await updateSite(updatedSite.id, {
+        name: updatedSite.name,
+        url: updatedSite.url,
+        description: updatedSite.description,
+        icon: updatedSite.icon,
+      });
+      setSites(prev => prev.map(site => 
+        site.id === updated.id ? updated : site
+      ));
+    } catch (err) {
+      console.error("Failed to update site:", err);
+      setError("更新网站失败，请重试");
+    }
+  };
+
+  const handleDeleteSite = async (id: string) => {
+    try {
+      await deleteSite(id);
+      setSites(prev => prev.filter(site => site.id !== id));
+    } catch (err) {
+      console.error("Failed to delete site:", err);
+      setError("删除网站失败，请重试");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>加载中...</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="container mx-auto px-4 pb-12">
+        {error && (
+          <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-md text-sm">
+            {error}
+          </div>
+        )}
+        <div className="flex justify-end mb-6">
+          <SiteDialogTrigger mode="add" onSave={handleAddSite}>
+            <Button variant="outline" className="gap-2">
+              <Plus className="h-4 w-4" />
+              添加网站
+            </Button>
+          </SiteDialogTrigger>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sites.map((site) => (
+            <SiteCard
+              key={site.id}
+              site={site}
+              onDelete={handleDeleteSite}
+              onEdit={handleEditSite}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ))}
         </div>
       </main>
+      <footer className="border-t py-6 text-center text-sm text-muted-foreground">
+        <p>网站导航门户 &copy; {new Date().getFullYear()}</p>
+      </footer>
     </div>
   );
 }
