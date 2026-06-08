@@ -4,13 +4,14 @@ import { supabase, SITES_TABLE } from '@/lib/supabase'
 // GET - 获取单个网站
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { data, error } = await supabase
       .from(SITES_TABLE)
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error) {
@@ -37,9 +38,10 @@ export async function GET(
 // PUT - 更新网站
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { name, url, description, icon } = body
 
@@ -66,7 +68,7 @@ export async function PUT(
         icon: icon || null,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -94,13 +96,14 @@ export async function PUT(
 // DELETE - 删除网站
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { error } = await supabase
       .from(SITES_TABLE)
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (error) {
       throw error
