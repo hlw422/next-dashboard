@@ -214,16 +214,18 @@ export default function Home() {
 
           {/* 操作按钮 */}
           <div className="flex justify-center gap-4">
-            {canManage ? (
-              <SiteDialogTrigger mode="add" onSave={handleAddSite}>
-                <Button 
-                  variant="outline" 
-                  className="gap-2 px-8 py-6 text-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-300 group"
-                >
-                  <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-30" />
-                  添加网站
-                </Button>
-              </SiteDialogTrigger>
+            {user ? (
+              canManage && (
+                <SiteDialogTrigger mode="add" onSave={handleAddSite}>
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 px-8 py-6 text-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-300 group"
+                  >
+                    <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-30" />
+                    添加网站
+                  </Button>
+                </SiteDialogTrigger>
+              )
             ) : (
               <Link href="/auth/login">
                 <Button 
